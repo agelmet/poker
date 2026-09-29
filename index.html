@@ -433,22 +433,23 @@ body{padding-bottom:calc(78px + env(safe-area-inset-bottom,0px))}
   <span class="eyebrow">Someone raised before you</span>
   <h2>Facing a raise</h2>
   <div class="panel" style="display:grid;gap:16px">
-    <h3 style="font-size:24px">Someone raised to 3 big blinds. Now what?</h3>
+    <h3 style="font-size:24px" id="frTitle">Someone raised to 3 big blinds. Now what?</h3>
     <p>He chose to raise, so his hands are <b>stronger than average</b>. You need a <b>better</b> hand to continue than you would to raise first. Pick who raised, then tap your hand:</p>
+    <div style="display:grid;gap:6px"><span class="lab">He made it</span><div class="seg" id="frSize"><button data-z="1">1 BB (just called)</button><button data-z="2">2 BB</button><button data-z="2.5">2.5 BB</button><button data-z="3">3 BB</button><button data-z="4">4 BB</button></div><p class="mut" id="frSizeNote" style="font-size:14px"></p></div>
     <div class="seg" id="frWho"><button data-w="ep">Early seat raised (UTG–HJ)</button><button data-w="lp">Late seat raised (CO / Button)</button><button data-w="bb">I'm the big blind</button></div>
     <div class="grid2">
       <div style="display:grid;gap:10px;align-content:start">
         <div class="grid13" id="grid3b"></div>
-        <div class="hleg"><span><i style="background:var(--gold);border-color:var(--gold)"></i>re-raise (3-bet)</span><span><i class="k-out"></i>call</span><span><i></i>fold</span></div>
+        <div class="hleg"><span><i style="background:var(--gold);border-color:var(--gold)"></i><span id="frL1">re-raise (3-bet)</span></span><span><i class="k-out"></i><span id="frL2">call</span></span><span><i></i>fold</span></div>
       </div>
       <div class="info" id="frInfo"></div>
     </div>
     <div class="ex3">
-      <div class="fact"><span class="eyebrow">Re-raise (3-bet)</span><span class="k">Only your best hands</span><span class="s">Raise to about <b style="color:var(--fg)">3× his raise</b> if you act after him, <b style="color:var(--fg)">4×</b> if you act before him (from the blinds). He raised to 3 BB → you make it 9–12 BB.</span></div>
+      <div class="fact"><span class="eyebrow">Re-raise (3-bet)</span><span class="k">Only your best hands</span><span class="s" id="frRR"></span></div>
       <div class="fact"><span class="eyebrow">Call</span><span class="k">Hands that play well after the flop</span><span class="s">Pairs (hoping for a set, 1 in 8.5), suited connected cards, strong aces. Much better when you act after him.</span></div>
       <div class="fact"><span class="eyebrow">Fold</span><span class="k">Everything else</span><span class="s">Weak aces (A-9, A-5 offsuit), K-J/Q-J offsuit vs an early raiser, any junk. These lose big pots to his better hands.</span></div>
     </div>
-    <div class="note" style="background:var(--panel2)"><b>The big blind gets a discount</b><p>He raises to 3 BB and everyone else folds. You already put in 1 BB, so you call just 2 more to win a pot of 3 + 0.5 + 1 = 4.5 BB. You need to win only <b class="mono">2 ÷ (4.5 + 2) = 31%</b> of the time. That's why the big blind can call with more hands than anyone else.</p></div>
+    <div class="note" style="background:var(--panel2)"><b>The big blind gets a discount</b><p id="frBBnote"></p></div>
     <p class="mut">If one or more players already called the raise, re-raise only with your very best hands, and add 1 raise-size per caller. Calling small pairs is only worth it if you and the raiser both have at least 15–20× the raise left in your stacks.</p>
   </div>
 </section>
@@ -869,22 +870,40 @@ drawRange();
 
 
 /* ---------- FACING A RAISE ---------- */
-const FR={ep:{t3:'QQ+,AKs,AKo',tc:'22+,AJs+,KQs,QJs,JTs,AQo',who:'an early seat (UTG–HJ)',note:'Early raisers have strong hands, so play tight.'},
- lp:{t3:'TT+,AQs+,AKo,AQo',tc:'22+,ATs+,KJs+,QJs,JTs,T9s,98s,87s,AJo,KQo',who:'a late seat (Cutoff or Button)',note:'Late raisers raise wider, so you can continue with more.'},
- bb:{t3:'TT+,AQs+,AKo,AQo',tc:'22+,A2s+,K9s+,Q9s+,J9s+,T8s+,97s+,86s+,76s,65s,54s,ATo+,KJo+,QJo,JTo',who:'someone (you are the big blind)',note:'You only need to win 31% of the time thanks to the discount, so you defend the most hands. This chart assumes a late-seat raise; against an early raise, use the "Early seat" chart.'}};
-Object.values(FR).forEach(v=>{v.s3=parse(v.t3);v.sc=parse(v.tc)});
-let frw='lp',frSel=null;const g3=$('#grid3b');
+const FRZ={
+ 1:{ep:{t3:'77+,A9s+,KTs+,QTs+,JTs,ATo+,KJo+,QJo,KTo,QTo,JTo',tc:'22+,A2s+,K9s,Q9s,J9s,T9s,T8s,98s,97s,87s,86s,76s,75s,65s,64s,54s,53s,43s'},lp:{t3:'77+,A9s+,KTs+,QTs+,JTs,ATo+,KJo+,QJo,KTo,QTo,JTo',tc:'22+,A2s+,K9s,Q9s,J9s,T9s,T8s,98s,97s,87s,86s,76s,75s,65s,64s,54s,53s,43s'},bb:{t3:'TT+,AQs+,AKo,AQo',tc:'22+,A2s+,K2s+,Q2s+,J2s+,T2s+,92s+,82s+,72s+,62s+,52s+,42s+,32s,A2o+,K2o+,Q2o+,J2o+,T2o+,92o+,82o+,72o+,62o+,52o+,42o+,32o'}},
+ 2:{ep:{t3:'QQ+,AKs,AKo',tc:'22+,ATs+,KTs+,QTs+,J9s+,T9s,98s,AJo+,KQo'},lp:{t3:'TT+,AJs+,KQs,AQo+',tc:'22+,A2s+,K9s+,Q9s+,J9s+,T8s+,97s+,87s,76s,65s,ATo+,KJo+,QJo,JTo'},bb:{t3:'TT+,AJs+,KQs,AQo+',tc:'22+,A2s+,K5s+,Q7s+,J7s+,T7s+,96s+,85s+,75s+,64s+,54s,A7o+,K9o+,Q9o+,J9o+,T9o,98o'}},
+ 2.5:{ep:{t3:'QQ+,AKs,AKo',tc:'22+,AJs+,KQs,KJs,QJs,JTs,T9s,AQo,KQo'},lp:{t3:'TT+,AQs+,AKo,AQo',tc:'22+,A9s+,A5s,KTs+,QTs+,J9s+,T9s,98s,87s,76s,AJo,ATo,KQo,KJo'},bb:{t3:'TT+,AQs+,AKo,AQo',tc:'22+,A2s+,K7s+,Q8s+,J8s+,T7s+,97s+,86s+,75s+,64s+,54s,A8o+,KTo+,QTo+,JTo,T9o'}},
+ 3:{ep:{t3:'QQ+,AKs,AKo',tc:'22+,AJs+,KQs,QJs,JTs,AQo'},lp:{t3:'TT+,AQs+,AKo,AQo',tc:'22+,ATs+,KJs+,QJs,JTs,T9s,98s,87s,AJo,KQo'},bb:{t3:'TT+,AQs+,AKo,AQo',tc:'22+,A2s+,K9s+,Q9s+,J9s+,T8s+,97s+,86s+,76s,65s,54s,ATo+,KJo+,QJo,JTo'}},
+ 4:{ep:{t3:'QQ+,AKs,AKo',tc:'22+,AJs+,KQs,AQo'},lp:{t3:'JJ+,AQs+,AKo',tc:'22+,ATs+,KQs,QJs,JTs,T9s,AQo,AJo'},bb:{t3:'JJ+,AQs+,AKo',tc:'22+,A2s+,K9s+,Q9s+,J9s+,T8s+,98s,87s,76s,65s,ATo+,KJo+,QJo,AQo'}}};
+const FRWHO={ep:'an early seat (UTG–HJ)',lp:'a late seat (Cutoff or Button)',bb:'someone (you are the big blind)'};
+const FRC={};function frSets(w,z){const k=w+z;if(!FRC[k])FRC[k]={s3:parse(FRZ[z][w].t3),sc:parse(FRZ[z][w].tc)};return FRC[k]}
+let frw='lp',frz=3,frSel=null;const g3=$('#grid3b');
 for(let i=0;i<13;i++)for(let j=0;j<13;j++){const h=i===j?RK[i]+RK[j]:i<j?RK[i]+RK[j]+'s':RK[j]+RK[i]+'o';const b=document.createElement('button');b.className='cell';b.textContent=h;b.dataset.h=h;b.onclick=()=>{frSel=h;drawFR()};g3.appendChild(b)}
 [...$('#frWho').children].forEach(b=>b.onclick=()=>{frw=b.dataset.w;drawFR()});
-function frAct(h){const v=FR[frw];return v.s3.has(h)?'3bet':v.sc.has(h)?'call':'fold'}
-function drawFR(){const v=FR[frw];[...$('#frWho').children].forEach(b=>b.setAttribute('aria-pressed',b.dataset.w===frw));
+[...$('#frSize').children].forEach(b=>b.onclick=()=>{frz=+b.dataset.z;drawFR()});
+function frAct(h){const v=frSets(frw,frz);return v.s3.has(h)?'3bet':v.sc.has(h)?'call':'fold'}
+function drawFR(){const v=frSets(frw,frz),limp=frz===1,bbm=frw==='bb',z=frz;
+ [...$('#frWho').children].forEach(b=>{b.setAttribute('aria-pressed',b.dataset.w===frw);if(b.dataset.w!=='bb')b.textContent=(b.dataset.w==='ep'?'Early seat ':'Late seat ')+(limp?'limped':'raised')+(b.dataset.w==='ep'?' (UTG–HJ)':' (CO / Button)')});
+ [...$('#frSize').children].forEach(b=>b.setAttribute('aria-pressed',+b.dataset.z===frz));
+ $('#frTitle').textContent=limp?'Someone just called 1 BB (a limp). Now what?':`Someone raised to ${z} big blinds. Now what?`;
+ $('#frSizeNote').textContent=limp?'Calling just the big blind isn\'t a raise, it\'s a limp. Limpers usually have weak hands, so you raise more hands against them.':z===2?'A min-raise: cheap to call, so you can continue with more hands.':z===2.5?'A small raise: slightly more hands can continue than against 3 BB.':z===4?'A big raise: usually a strong hand, and calling costs more. Continue with fewer hands.':'The most common raise size.';
+ $('#frL1').textContent=limp?'raise (isolate)':'re-raise (3-bet)';$('#frL2').textContent=limp?(bbm?'check (free)':'limp behind'):'call';
+ $('#frRR').innerHTML=limp?`Raise to about <b style="color:var(--fg)">4 BB + 1 BB per limper</b> (€8 against one limper at €1/€2). You'll usually play him alone with the better hand.`:`Raise to about <b style="color:var(--fg)">3× his raise</b> if you act after him, <b style="color:var(--fg)">4×</b> if you act before him (from the blinds). He raised to ${z} BB → you make it ${Math.round(3*z*10)/10}–${Math.round(4*z*10)/10} BB.`;
+ const need=z>1?(z-1)/(2*z+0.5):0;
+ $('#frBBnote').innerHTML=limp?'Nobody raised, so in the big blind you can <b>check for free</b> and see the flop. Raise only with strong hands.':`He raises to ${z} BB and everyone else folds. You already put in 1 BB, so you call just ${z-1} more to win a pot of ${z} + 0.5 + 1 = ${z+1.5} BB. You need to win only <b class="mono">${z-1} ÷ (${z+1.5} + ${z-1}) = ${Math.round(need*100)}%</b> of the time. That's why the big blind can call with more hands than anyone else.`;
  let c3=0,cc=0;[...g3.children].forEach(b=>{const h=b.dataset.h,a=frAct(h);b.classList.toggle('c3',a==='3bet');b.classList.toggle('cc',a==='call');b.classList.toggle('sel',h===frSel);const n=combos(h);if(a==='3bet')c3+=n;else if(a==='call')cc+=n});
- let html=`<div class="stat"><span>Who raised</span><b style="font-family:var(--body)">${v.who}</b></div><div class="stat"><span>Re-raise</span><b style="color:var(--gold)">${(100*c3/1326).toFixed(0)}% of hands</b></div><div class="stat"><span>Call</span><b class="g">${(100*cc/1326).toFixed(0)}% of hands</b></div><div class="stat"><span>Fold</span><b>${(100-100*(c3+cc)/1326).toFixed(0)}% of hands</b></div><p class="mut" style="font-size:14px">${v.note}</p>`;
- if(frSel){const a=frAct(frSel),pair=frSel.length===2,suited=frSel[2]==='s';
-  const why=a==='3bet'?`<b style="color:var(--gold)">RE-RAISE</b> to about 3× his raise (4× from the blinds). One of your best hands: make him pay and keep the pot to one or two players.`
-   :a==='call'?`<b class="g">CALL.</b> ${pair?'You are mainly hoping to hit a set (1 time in 8.5). Only worth it if you both have 15–20× the raise left in your stacks. Fold the pair on the flop if you miss and face a big bet.':suited?'It plays well after the flop (flushes, straights), especially when you act after him.':'Good enough to continue, not strong enough to re-raise. Be careful if you only hit one pair and he keeps betting big.'}`
+ const L=limp?['Raise',bbm?'Check':'Limp behind']:['Re-raise','Call'];
+ const note=bbm?(limp?'Free flop: check everything you don\'t raise.':`You only need to win ${Math.round(need*100)}% of the time thanks to the discount, so you defend the most hands. This chart assumes a late-seat raiser; against an early raiser, use the "Early seat" chart.`):frw==='ep'?(limp?'Chart for one limper. With 2+ limpers, fold the offsuit hands and limp behind with pairs and suited hands.':'Early raisers have strong hands, so play tight.'):(limp?'Chart for one limper. With 2+ limpers, fold the offsuit hands and limp behind with pairs and suited hands.':'Late raisers raise wider, so you can continue with more.');
+ let html=`<div class="stat"><span>Who ${limp?'limped':'raised'}</span><b style="font-family:var(--body)">${FRWHO[frw]}</b></div><div class="stat"><span>${L[0]}</span><b style="color:var(--gold)">${(100*c3/1326).toFixed(0)}% of hands</b></div><div class="stat"><span>${L[1]}</span><b class="g">${(100*cc/1326).toFixed(0)}% of hands</b></div><div class="stat"><span>Fold</span><b>${(100-100*(c3+cc)/1326).toFixed(0)}% of hands</b></div><p class="mut" style="font-size:14px">${note}</p>`;
+ if(frSel){const a=frAct(frSel),pair=frSel.length===2,suited=frSel[2]==='s';let why;
+  if(limp){why=a==='3bet'?`<b style="color:var(--gold)">RAISE</b> to about ${bbm?'5':'4'} BB (+1 BB per extra limper). A limper usually has a weak hand: play him alone with the better hand.`
+    :a==='call'?(bbm?'<b class="g">CHECK.</b> You see the flop for free.':`<b class="g">LIMP BEHIND</b> (call 1 BB). ${pair?'A small pair: a cheap try to hit a set (1 time in 8.5).':'A suited hand: a cheap flop that can turn into a straight or flush.'}`)
+    :`<b class="r">FOLD.</b> ${frSel[0]==='A'&&!suited?'A weak ace: when an ace comes, someone often has a better one.':'Too weak, even against a limper. It loses in pots with several players.'}`;}
+  else why=a==='3bet'?`<b style="color:var(--gold)">RE-RAISE</b> to about ${Math.round(3*z*10)/10}–${Math.round(4*z*10)/10} BB. One of your best hands: make him pay and keep the pot to one or two players.`
+   :a==='call'?`<b class="g">CALL</b> (${z-(bbm?1:0)} BB more). ${pair?'You are mainly hoping to hit a set (1 time in 8.5). Only worth it if you both have 15–20× the raise left in your stacks. Fold the pair on the flop if you miss and he bets.':suited?'It plays well after the flop (flushes, straights), especially when you act after him.':'Good enough to continue, not strong enough to re-raise. Be careful if you only hit one pair and he keeps betting big.'}`
    :`<b class="r">FOLD.</b> ${frSel[0]==='A'&&!suited?'A weak ace: when an ace comes, he often has a better ace (AK, AQ) and you lose a big pot.':'Too weak against the hands he raises with. Save the money for a better spot.'}`;
-  html+=`<div class="why"><b>${frSel}</b><span>${why}</span><span class="mut" style="font-size:14px">Wins ${WIN[frSel][0]}% vs a random hand, but a raiser's hands are much stronger than random.</span></div>`}
+  html+=`<div class="why"><b>${frSel}</b><span>${why}</span><span class="mut" style="font-size:14px">Wins ${WIN[frSel][0]}% vs a random hand${limp?'.':', but a raiser\'s hands are much stronger than random.'}</span></div>`}
  else html+=`<div class="mut" style="font-size:14px">Tap a hand in the grid to see what to do and why. For a full hand, use the Play tab.</div>`;
  $('#frInfo').innerHTML=html}
 drawFR();
